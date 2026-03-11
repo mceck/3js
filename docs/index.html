@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Vaults of the Forgotten Architect</title>
+  <script type="module" crossorigin src="/3js/assets/index-C7nGrlds.js"></script>
+  <link rel="stylesheet" crossorigin href="/3js/assets/index-BvffmeAT.css">
+</head>
+<body>
+  <div id="game-container">
+    <canvas id="game-canvas"></canvas>
+  </div>
+
+  <!-- UI Overlay -->
+  <div id="ui-overlay">
+    <div id="ui-top">
+      <div id="level-name">Chamber of First Light</div>
+      <div id="move-counter">Moves: 0</div>
+    </div>
+    <div id="ui-controls">
+      <span>WASD/Arrows: Move</span>
+      <span>Z: Undo</span>
+      <span>R: Reset</span>
+      <span>Mouse: Rotate camera</span>
+    </div>
+  </div>
+
+  <!-- Level complete overlay -->
+  <div id="level-complete" class="hidden">
+    <div id="complete-box">
+      <h2>Chamber Activated</h2>
+      <p id="complete-moves"></p>
+      <button id="next-level-btn">Next Chamber</button>
+    </div>
+  </div>
+
+  <!-- Title screen -->
+  <div id="title-screen">
+    <div id="title-content">
+      <h1>Vaults of the<br/>Forgotten Architect</h1>
+      <p class="subtitle">Push the energy cores onto the power plates<br/>to reactivate the ancient chambers.</p>
+      <button id="start-btn">Enter the Vaults</button>
+      <div id="level-select"></div>
+    </div>
+  </div>
+
+</body>
+</html>
