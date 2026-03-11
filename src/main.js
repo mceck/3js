@@ -86,7 +86,13 @@ const ambientParticles = new AmbientParticles(scene, 250);
 const game = new Game(scene);
 game.onLevelLoaded = (gridWidth, gridHeight) => {
   updateCameraSize(camera, gridWidth, gridHeight);
-  controls.target.set(0, 0, 0);
+  // Snap camera target to player position immediately on level load
+  if (game.player) {
+    const pos = game.player.group.position;
+    controls.target.set(pos.x, 0, pos.z);
+  } else {
+    controls.target.set(0, 0, 0);
+  }
   controls.update();
 };
 
@@ -185,16 +191,24 @@ if (isTouchDevice) {
 }
 
 // Render loop
+const CAMERA_LERP = 0.08; // smooth follow speed
 const clock = new THREE.Clock();
 function animate() {
   requestAnimationFrame(animate);
   const elapsed = clock.getElapsedTime();
 
+  // Smoothly follow the player with the camera target
+  if (game.player) {
+    const pos = game.player.group.position;
+    controls.target.x += (pos.x - controls.target.x) * CAMERA_LERP;
+    controls.target.z += (pos.z - controls.target.z) * CAMERA_LERP;
+    controls.target.y = 0;
+  }
+
   controls.update();
   game.update(elapsed);
   ambientParticles.update(elapsed);
 
-  // Use composer instead of renderer for post-processing
   composer.render();
 }
 
