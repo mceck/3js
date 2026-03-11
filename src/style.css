@@ -192,3 +192,163 @@ button:hover {
   background: transparent;
   box-shadow: none;
 }
+
+/* Mobile controls */
+#mobile-controls {
+  display: none;
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  pointer-events: none;
+  z-index: 20;
+  padding: 12px 16px 24px;
+}
+
+#mobile-actions {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 8px;
+  pointer-events: all;
+}
+
+.mobile-action-btn {
+  padding: 10px 20px;
+  font-size: 13px;
+  border-color: rgba(100, 200, 255, 0.3);
+  color: rgba(100, 200, 255, 0.6);
+  background: rgba(5, 5, 15, 0.7);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+}
+
+.mobile-action-btn:active {
+  background: rgba(100, 200, 255, 0.15);
+}
+
+/* D-pad */
+#dpad {
+  display: grid;
+  grid-template-columns: 56px 56px 56px;
+  grid-template-rows: 56px 56px;
+  gap: 4px;
+  justify-content: center;
+  pointer-events: all;
+}
+
+.dpad-btn {
+  width: 56px;
+  height: 56px;
+  padding: 0;
+  border: 1px solid rgba(100, 200, 255, 0.25);
+  border-radius: 8px;
+  background: rgba(5, 5, 15, 0.7);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 20px;
+  color: rgba(100, 200, 255, 0.5);
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
+}
+
+.dpad-btn:active {
+  background: rgba(100, 200, 255, 0.15);
+}
+
+.dpad-center {
+  border-color: transparent;
+  background: transparent;
+  cursor: default;
+}
+
+.dpad-center:active {
+  background: transparent;
+}
+
+/* D-pad arrows using borders */
+#dpad-up::after {
+  content: '';
+  width: 0;
+  height: 0;
+  border-left: 10px solid transparent;
+  border-right: 10px solid transparent;
+  border-bottom: 12px solid rgba(100, 200, 255, 0.5);
+}
+
+#dpad-down::after {
+  content: '';
+  width: 0;
+  height: 0;
+  border-left: 10px solid transparent;
+  border-right: 10px solid transparent;
+  border-top: 12px solid rgba(100, 200, 255, 0.5);
+}
+
+#dpad-left::after {
+  content: '';
+  width: 0;
+  height: 0;
+  border-top: 10px solid transparent;
+  border-bottom: 10px solid transparent;
+  border-right: 12px solid rgba(100, 200, 255, 0.5);
+}
+
+#dpad-right::after {
+  content: '';
+  width: 0;
+  height: 0;
+  border-top: 10px solid transparent;
+  border-bottom: 10px solid transparent;
+  border-left: 12px solid rgba(100, 200, 255, 0.5);
+}
+
+/* D-pad layout: up in top-center, left/center/right in bottom row */
+#dpad-up    { grid-column: 2; grid-row: 1; }
+#dpad-left  { grid-column: 1; grid-row: 2; }
+.dpad-center { grid-column: 2; grid-row: 2; }
+#dpad-right { grid-column: 3; grid-row: 2; }
+#dpad-down  { grid-column: 2; grid-row: 3; }
+
+#dpad {
+  grid-template-rows: 56px 56px 56px;
+}
+
+/* Show mobile controls on touch devices */
+@media (pointer: coarse), (max-width: 768px) {
+  #mobile-controls {
+    display: block;
+  }
+  .desktop-only {
+    display: none !important;
+  }
+}
+
+/* Title screen responsive */
+@media (max-width: 480px) {
+  #title-content h1 {
+    font-size: 28px;
+  }
+  .subtitle {
+    font-size: 12px;
+    padding: 0 24px;
+  }
+  #complete-box {
+    padding: 32px 24px;
+    margin: 0 16px;
+  }
+  #complete-box h2 {
+    font-size: 22px;
+  }
+  #ui-top {
+    padding: 10px 16px;
+  }
+  #level-name {
+    font-size: 14px;
+  }
+  #move-counter {
+    font-size: 13px;
+  }
+}

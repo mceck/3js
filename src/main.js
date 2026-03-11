@@ -113,6 +113,39 @@ window.addEventListener('resize', () => {
   }
 });
 
+// Mobile D-pad controls
+const dpadButtons = document.querySelectorAll('.dpad-btn[data-dx]');
+dpadButtons.forEach(btn => {
+  const handler = (e) => {
+    e.preventDefault();
+    const titleScreen = document.getElementById('title-screen');
+    if (titleScreen && !titleScreen.classList.contains('hidden')) return;
+    const completeOverlay = document.getElementById('level-complete');
+    if (completeOverlay && !completeOverlay.classList.contains('hidden')) return;
+
+    const dx = parseInt(btn.dataset.dx, 10);
+    const dz = parseInt(btn.dataset.dz, 10);
+    const dir = transformDirection(dx, dz, controls);
+    game.handleMove(dir.dx, dir.dz);
+  };
+  btn.addEventListener('touchstart', handler, { passive: false });
+  btn.addEventListener('mousedown', handler);
+});
+
+document.getElementById('btn-undo').addEventListener('click', () => game.undo());
+document.getElementById('btn-reset').addEventListener('click', () => game.reset());
+
+// On touch devices, use 2-finger rotate so single touch doesn't conflict
+const isTouchDevice = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
+if (isTouchDevice) {
+  controls.touches = {
+    ONE: THREE.TOUCH.ROTATE,
+    TWO: THREE.TOUCH.DOLLY_PAN,
+  };
+  // Increase rotate threshold so accidental touches don't rotate
+  controls.rotateSpeed = 0.4;
+}
+
 // Render loop
 const clock = new THREE.Clock();
 function animate() {

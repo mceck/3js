@@ -17,11 +17,26 @@
       <div id="level-name">Chamber of First Light</div>
       <div id="move-counter">Moves: 0</div>
     </div>
-    <div id="ui-controls">
+    <div id="ui-controls" class="desktop-only">
       <span>WASD/Arrows: Move</span>
       <span>Z: Undo</span>
       <span>R: Reset</span>
       <span>Mouse: Rotate camera</span>
+    </div>
+  </div>
+
+  <!-- Mobile controls -->
+  <div id="mobile-controls">
+    <div id="mobile-actions">
+      <button class="mobile-action-btn" id="btn-undo">Undo</button>
+      <button class="mobile-action-btn" id="btn-reset">Reset</button>
+    </div>
+    <div id="dpad">
+      <button class="dpad-btn" id="dpad-up" data-dx="0" data-dz="-1"></button>
+      <button class="dpad-btn" id="dpad-left" data-dx="-1" data-dz="0"></button>
+      <button class="dpad-btn dpad-center"></button>
+      <button class="dpad-btn" id="dpad-right" data-dx="1" data-dz="0"></button>
+      <button class="dpad-btn" id="dpad-down" data-dx="0" data-dz="1"></button>
     </div>
   </div>
 
