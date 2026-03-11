@@ -2,7 +2,6 @@ import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 
 export function createCamera(canvas, gridWidth, gridHeight) {
-  // Calculate view size based on grid
   const maxDim = Math.max(gridWidth || 7, gridHeight || 7);
   const viewSize = maxDim * 0.9;
 
@@ -18,8 +17,8 @@ export function createCamera(canvas, gridWidth, gridHeight) {
 
   // Isometric-like angle
   const dist = 15;
-  const angle = Math.PI / 4; // 45 degrees rotation
-  const tilt = Math.atan(1 / Math.sqrt(2)); // ~35.26 degrees - true isometric
+  const angle = Math.PI / 4;
+  const tilt = Math.atan(1 / Math.sqrt(2));
 
   camera.position.set(
     dist * Math.sin(angle) * Math.cos(tilt),
@@ -62,4 +61,37 @@ export function updateCameraSize(camera, gridWidth, gridHeight) {
   camera.top = viewSize / 2;
   camera.bottom = -viewSize / 2;
   camera.updateProjectionMatrix();
+}
+
+// Smoothly snap-rotate the camera by 90 degrees
+// direction: +1 = clockwise, -1 = counter-clockwise
+export function snapRotateCamera(controls, direction) {
+  const currentAzimuth = controls.getAzimuthalAngle();
+  const snappedCurrent = Math.round(currentAzimuth / (Math.PI / 2)) * (Math.PI / 2);
+  const targetAzimuth = snappedCurrent + direction * (Math.PI / 2);
+
+  const startAzimuth = currentAzimuth;
+  const startTime = performance.now();
+  const duration = 350;
+
+  function animate(now) {
+    const t = Math.min((now - startTime) / duration, 1);
+    const ease = t < 0.5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2;
+
+    const angle = startAzimuth + (targetAzimuth - startAzimuth) * ease;
+    const polar = controls.getPolarAngle();
+    const distance = controls.object.position.distanceTo(controls.target);
+
+    controls.object.position.x = controls.target.x + distance * Math.sin(polar) * Math.sin(angle);
+    controls.object.position.y = controls.target.y + distance * Math.cos(polar);
+    controls.object.position.z = controls.target.z + distance * Math.sin(polar) * Math.cos(angle);
+    controls.object.lookAt(controls.target);
+    controls.update();
+
+    if (t < 1) {
+      requestAnimationFrame(animate);
+    }
+  }
+
+  requestAnimationFrame(animate);
 }

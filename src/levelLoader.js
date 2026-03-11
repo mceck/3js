@@ -25,6 +25,8 @@ export function parseLevel(levelData) {
 
   return {
     name: levelData.name,
+    description: levelData.description || '',
+    completionText: levelData.completionText || '',
     grid,
     playerStart,
     blocks,

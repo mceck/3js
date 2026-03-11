@@ -47,7 +47,6 @@ export class Game {
 
     this.ui.nextLevelBtn.addEventListener('click', () => {
       this.ui.hideComplete();
-      // Clean up any remaining celebrations
       this.celebrations.forEach(c => { if (c.alive) c.dispose(); });
       this.celebrations = [];
       if (this.currentLevel < levels.length - 1) {
@@ -56,6 +55,10 @@ export class Game {
         this.ui.showTitle();
         this._updateLevelSelect();
       }
+    });
+
+    this.ui.introStartBtn.addEventListener('click', () => {
+      this.ui.hideIntro();
     });
 
     this._updateLevelSelect();
@@ -68,7 +71,7 @@ export class Game {
     });
   }
 
-  loadLevel(index) {
+  loadLevel(index, showIntro = true) {
     this.currentLevel = index;
     this.moves = 0;
     this.history = [];
@@ -108,6 +111,11 @@ export class Game {
 
     if (this.onLevelLoaded) {
       this.onLevelLoaded(this.grid.width, this.grid.height);
+    }
+
+    // Show level intro with narrative
+    if (showIntro && this.levelData.description) {
+      this.ui.showIntro(this.levelData.name, this.levelData.description);
     }
   }
 
@@ -164,7 +172,11 @@ export class Game {
         this._saveProgress();
       }
       setTimeout(() => {
-        this.ui.showComplete(this.moves, this.currentLevel >= levels.length - 1);
+        this.ui.showComplete(
+          this.moves,
+          this.currentLevel >= levels.length - 1,
+          this.levelData.completionText
+        );
         this._updateLevelSelect();
       }, 800);
     }
@@ -186,7 +198,7 @@ export class Game {
 
   reset() {
     if (this.busy) return;
-    this.loadLevel(this.currentLevel);
+    this.loadLevel(this.currentLevel, false); // skip intro on reset
   }
 
   _saveState() {

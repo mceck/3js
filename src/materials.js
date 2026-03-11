@@ -2,21 +2,21 @@ import * as THREE from 'three';
 
 // Color palette
 export const COLORS = {
-  floor: 0x0e1018,
-  floorLine: 0x1a1e2a,
-  wall: 0x161820,
-  wallTop: 0x1e2028,
-  wallEdge: 0x2a2e3a,
+  floor: 0x1a2030,
+  floorLine: 0x2a3040,
+  wall: 0x242830,
+  wallTop: 0x303840,
+  wallEdge: 0x3a4050,
   block: 0x00ccff,
   blockOnPlate: 0x40ff90,
   plate: 0xaa44ff,
   plateActive: 0x40ff90,
   player: 0x00ccff,
   playerInner: 0x88ddff,
-  ambient: 0x080810,
-  fog: 0x03030a,
-  groundGrid: 0x0c0e16,
-  groundLine: 0x141828,
+  ambient: 0x1a1a30,
+  fog: 0x0a0c18,
+  groundGrid: 0x141824,
+  groundLine: 0x1e2838,
 };
 
 // Floor tile material - slightly reflective dark

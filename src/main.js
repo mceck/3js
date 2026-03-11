@@ -5,7 +5,7 @@ import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js'
 import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
 import { VignetteShader } from 'three/addons/shaders/VignetteShader.js';
-import { createCamera, createControls, updateCameraSize } from './camera.js';
+import { createCamera, createControls, updateCameraSize, snapRotateCamera } from './camera.js';
 import { Game } from './game.js';
 import { AmbientParticles } from './particles.js';
 import { COLORS } from './materials.js';
@@ -18,17 +18,17 @@ renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
 renderer.shadowMap.enabled = true;
 renderer.shadowMap.type = THREE.PCFSoftShadowMap;
 renderer.toneMapping = THREE.ACESFilmicToneMapping;
-renderer.toneMappingExposure = 1.1;
+renderer.toneMappingExposure = 1.4;
 
 const scene = new THREE.Scene();
 scene.background = new THREE.Color(COLORS.fog);
-scene.fog = new THREE.FogExp2(COLORS.fog, 0.035);
+scene.fog = new THREE.FogExp2(COLORS.fog, 0.018);
 
 // Lighting
-const ambientLight = new THREE.AmbientLight(COLORS.ambient, 2.0);
+const ambientLight = new THREE.AmbientLight(COLORS.ambient, 2.5);
 scene.add(ambientLight);
 
-const dirLight = new THREE.DirectionalLight(0x3344aa, 0.6);
+const dirLight = new THREE.DirectionalLight(0x5566cc, 0.9);
 dirLight.position.set(5, 12, 5);
 dirLight.castShadow = true;
 dirLight.shadow.mapSize.width = 2048;
@@ -42,13 +42,13 @@ dirLight.shadow.camera.bottom = -12;
 dirLight.shadow.bias = -0.001;
 scene.add(dirLight);
 
-// Cool fill light from opposite side
-const fillLight = new THREE.DirectionalLight(0x220044, 0.4);
+// Fill light from opposite side
+const fillLight = new THREE.DirectionalLight(0x443388, 0.6);
 fillLight.position.set(-5, 6, -5);
 scene.add(fillLight);
 
-// Subtle hemisphere light for ambient color variation
-const hemiLight = new THREE.HemisphereLight(0x0a0a20, 0x080808, 0.5);
+// Hemisphere light for ambient color variation
+const hemiLight = new THREE.HemisphereLight(0x1a1a40, 0x101018, 0.7);
 scene.add(hemiLight);
 
 // Camera
@@ -69,10 +69,10 @@ const bloomPass = new UnrealBloomPass(
 );
 composer.addPass(bloomPass);
 
-// Vignette - dark edges for cinematic feel
+// Vignette - subtle dark edges
 const vignettePass = new ShaderPass(VignetteShader);
-vignettePass.uniforms['darkness'].value = 1.2;
-vignettePass.uniforms['offset'].value = 1.0;
+vignettePass.uniforms['darkness'].value = 0.6;
+vignettePass.uniforms['offset'].value = 1.2;
 composer.addPass(vignettePass);
 
 // Output pass for correct color space
@@ -86,7 +86,6 @@ const ambientParticles = new AmbientParticles(scene, 250);
 const game = new Game(scene);
 game.onLevelLoaded = (gridWidth, gridHeight) => {
   updateCameraSize(camera, gridWidth, gridHeight);
-  // Snap camera target to player position immediately on level load
   if (game.player) {
     const pos = game.player.group.position;
     controls.target.set(pos.x, 0, pos.z);
@@ -113,6 +112,8 @@ function isOverlayActive() {
   if (titleScreen && !titleScreen.classList.contains('hidden')) return true;
   const completeOverlay = document.getElementById('level-complete');
   if (completeOverlay && !completeOverlay.classList.contains('hidden')) return true;
+  const introOverlay = document.getElementById('level-intro');
+  if (introOverlay && !introOverlay.classList.contains('hidden')) return true;
   return false;
 }
 
@@ -134,6 +135,16 @@ document.addEventListener('keydown', (e) => {
   if (e.code === 'KeyR') {
     e.preventDefault();
     game.reset();
+  }
+
+  // Q/E for camera rotation on desktop
+  if (e.code === 'KeyQ') {
+    e.preventDefault();
+    snapRotateCamera(controls, -1);
+  }
+  if (e.code === 'KeyE') {
+    e.preventDefault();
+    snapRotateCamera(controls, 1);
   }
 });
 
@@ -180,18 +191,26 @@ dpadButtons.forEach(btn => {
 document.getElementById('btn-undo').addEventListener('click', () => game.undo());
 document.getElementById('btn-reset').addEventListener('click', () => game.reset());
 
-// On touch devices, configure OrbitControls for touch
-const isTouchDevice = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
-if (isTouchDevice) {
+// Camera rotation buttons (mobile)
+document.getElementById('btn-cam-left').addEventListener('click', () => {
+  snapRotateCamera(controls, -1);
+});
+document.getElementById('btn-cam-right').addEventListener('click', () => {
+  snapRotateCamera(controls, 1);
+});
+
+// On touch-primary devices, disable free touch rotation — use snap buttons instead
+const isTouchPrimary = window.matchMedia('(pointer: coarse)').matches;
+if (isTouchPrimary) {
+  controls.enableRotate = false;
   controls.touches = {
-    ONE: THREE.TOUCH.ROTATE,
+    ONE: THREE.TOUCH.NONE,
     TWO: THREE.TOUCH.DOLLY_PAN,
   };
-  controls.rotateSpeed = 0.4;
 }
 
 // Render loop
-const CAMERA_LERP = 0.08; // smooth follow speed
+const CAMERA_LERP = 0.15;
 const clock = new THREE.Clock();
 function animate() {
   requestAnimationFrame(animate);

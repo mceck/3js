@@ -31,6 +31,10 @@
       <button class="mobile-action-btn" id="btn-undo">Undo</button>
       <button class="mobile-action-btn" id="btn-reset">Reset</button>
     </div>
+    <div id="mobile-camera">
+      <button class="mobile-action-btn camera-rotate-btn" id="btn-cam-left">&#x21B6; View</button>
+      <button class="mobile-action-btn camera-rotate-btn" id="btn-cam-right">View &#x21B7;</button>
+    </div>
     <div id="dpad">
       <button class="dpad-btn" id="dpad-up" data-dx="0" data-dz="-1"></button>
       <button class="dpad-btn" id="dpad-left" data-dx="-1" data-dz="0"></button>
@@ -40,10 +44,20 @@
     </div>
   </div>
 
+  <!-- Level intro overlay -->
+  <div id="level-intro" class="hidden">
+    <div id="intro-box">
+      <h2 id="intro-level-name"></h2>
+      <p id="intro-description"></p>
+      <button id="intro-start-btn">Begin</button>
+    </div>
+  </div>
+
   <!-- Level complete overlay -->
   <div id="level-complete" class="hidden">
     <div id="complete-box">
-      <h2>Chamber Activated</h2>
+      <h2 id="complete-heading">Chamber Activated</h2>
+      <p id="complete-narrative"></p>
       <p id="complete-moves"></p>
       <button id="next-level-btn">Next Chamber</button>
     </div>
@@ -53,7 +67,7 @@
   <div id="title-screen">
     <div id="title-content">
       <h1>Vaults of the<br/>Forgotten Architect</h1>
-      <p class="subtitle">Push the energy cores onto the power plates<br/>to reactivate the ancient chambers.</p>
+      <p class="subtitle">Deep beneath the surface, the Architect's chambers lie dormant.<br/>Push the energy cores onto the power plates to reawaken them.</p>
       <button id="start-btn">Enter the Vaults</button>
       <div id="level-select"></div>
     </div>

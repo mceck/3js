@@ -108,6 +108,21 @@ body {
   margin-bottom: 24px;
 }
 
+#complete-narrative {
+  font-size: 14px;
+  color: #a0b0c0;
+  line-height: 1.6;
+  margin-bottom: 16px;
+  font-style: italic;
+  max-width: 400px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+#complete-box {
+  max-width: 480px;
+}
+
 button {
   background: transparent;
   border: 1px solid #7af0ff;
@@ -226,6 +241,29 @@ button:hover {
   background: rgba(100, 200, 255, 0.15);
 }
 
+/* Camera rotation buttons */
+#mobile-camera {
+  display: flex;
+  justify-content: center;
+  gap: 16px;
+  margin-bottom: 8px;
+  pointer-events: all;
+}
+
+.camera-rotate-btn {
+  padding: 8px 20px;
+  font-size: 13px;
+  border-color: rgba(160, 100, 255, 0.3);
+  color: rgba(160, 100, 255, 0.6);
+  background: rgba(5, 5, 15, 0.7);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+}
+
+.camera-rotate-btn:active {
+  background: rgba(160, 100, 255, 0.15);
+}
+
 /* D-pad */
 #dpad {
   display: grid;
@@ -316,6 +354,48 @@ button:hover {
   grid-template-rows: 56px 56px 56px;
 }
 
+/* Level intro overlay */
+#level-intro {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(5, 5, 15, 0.9);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 150;
+}
+
+#level-intro.hidden {
+  display: none;
+}
+
+#intro-box {
+  text-align: center;
+  padding: 48px 64px;
+  border: 1px solid rgba(160, 100, 255, 0.2);
+  border-radius: 8px;
+  background: rgba(10, 15, 30, 0.95);
+  box-shadow: 0 0 40px rgba(160, 100, 255, 0.1);
+  max-width: 480px;
+}
+
+#intro-box h2 {
+  font-size: 24px;
+  color: #7af0ff;
+  text-shadow: 0 0 20px rgba(100, 200, 255, 0.6);
+  margin-bottom: 16px;
+}
+
+#intro-box p {
+  font-size: 15px;
+  color: #a0b0c0;
+  line-height: 1.7;
+  margin-bottom: 28px;
+}
+
 /* Show mobile controls on touch devices */
 @media (pointer: coarse), (max-width: 768px) {
   #mobile-controls {
@@ -326,7 +406,7 @@ button:hover {
   }
 }
 
-/* Title screen responsive */
+/* Responsive */
 @media (max-width: 480px) {
   #title-content h1 {
     font-size: 28px;
@@ -341,6 +421,16 @@ button:hover {
   }
   #complete-box h2 {
     font-size: 22px;
+  }
+  #intro-box {
+    padding: 32px 24px;
+    margin: 0 16px;
+  }
+  #intro-box h2 {
+    font-size: 20px;
+  }
+  #intro-box p {
+    font-size: 13px;
   }
   #ui-top {
     padding: 10px 16px;
