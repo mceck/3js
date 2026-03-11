@@ -4,6 +4,7 @@ import { Block } from './block.js';
 import { parseLevel } from './levelLoader.js';
 import { levels } from './levels/index.js';
 import { UI } from './ui.js';
+import { CelebrationBurst } from './particles.js';
 
 export class Game {
   constructor(scene) {
@@ -15,10 +16,11 @@ export class Game {
     this.currentLevel = 0;
     this.unlockedLevel = 0;
     this.moves = 0;
-    this.history = []; // undo stack
-    this.busy = false; // prevent input during animation
+    this.history = [];
+    this.busy = false;
     this.levelData = null;
-    this.onLevelLoaded = null; // callback for camera resize
+    this.onLevelLoaded = null;
+    this.celebrations = []; // active celebration effects
 
     this._loadProgress();
     this._setupUI();
@@ -45,6 +47,9 @@ export class Game {
 
     this.ui.nextLevelBtn.addEventListener('click', () => {
       this.ui.hideComplete();
+      // Clean up any remaining celebrations
+      this.celebrations.forEach(c => { if (c.alive) c.dispose(); });
+      this.celebrations = [];
       if (this.currentLevel < levels.length - 1) {
         this.loadLevel(this.currentLevel + 1);
       } else {
@@ -72,13 +77,15 @@ export class Game {
     const level = levels[index];
     this.levelData = parseLevel(level);
 
-    // Clear old blocks
+    // Clear old entities
     this.blocks.forEach(b => b.dispose());
     this.blocks = [];
     if (this.player) {
       this.player.dispose();
       this.player = null;
     }
+    this.celebrations.forEach(c => { if (c.alive) c.dispose(); });
+    this.celebrations = [];
 
     // Build grid
     this.grid.build(this.levelData.grid);
@@ -99,45 +106,36 @@ export class Game {
 
     this._updateBlockStates();
 
-    // Notify camera
     if (this.onLevelLoaded) {
       this.onLevelLoaded(this.grid.width, this.grid.height);
     }
   }
 
-  // Handle directional input
   async handleMove(dx, dz) {
     if (this.busy || !this.player) return;
 
     const newX = this.player.gridX + dx;
     const newZ = this.player.gridZ + dz;
 
-    // Check bounds and walkability
     if (!this.grid.isWalkable(newX, newZ)) return;
 
-    // Check for block at target
     const blockAtTarget = this.blocks.find(b => b.gridX === newX && b.gridZ === newZ);
 
     if (blockAtTarget) {
-      // Try to push block
       const pushX = newX + dx;
       const pushZ = newZ + dz;
 
-      // Block can't be pushed if destination is not walkable or has another block
       if (!this.grid.isWalkable(pushX, pushZ)) return;
       if (this.blocks.some(b => b.gridX === pushX && b.gridZ === pushZ)) return;
 
-      // Save state for undo
       this._saveState();
 
-      // Move block and player
       this.busy = true;
       await Promise.all([
         blockAtTarget.moveTo(pushX, pushZ, this.grid),
         this.player.moveTo(newX, newZ, this.grid),
       ]);
     } else {
-      // Just move player
       this._saveState();
       this.busy = true;
       await this.player.moveTo(newX, newZ, this.grid);
@@ -148,10 +146,19 @@ export class Game {
     this._updateBlockStates();
     this.busy = false;
 
-    // Check win
     if (this._checkWin()) {
       this.busy = true;
-      // Unlock next level
+
+      // Spawn celebration bursts from each plate
+      for (const plate of this.levelData.plates) {
+        const world = this.grid.gridToWorld(plate.x, plate.z);
+        setTimeout(() => {
+          this.celebrations.push(
+            new CelebrationBurst(this.scene, { x: world.x, y: 0.5, z: world.z })
+          );
+        }, Math.random() * 300);
+      }
+
       if (this.currentLevel + 1 > this.unlockedLevel) {
         this.unlockedLevel = this.currentLevel + 1;
         this._saveProgress();
@@ -159,11 +166,10 @@ export class Game {
       setTimeout(() => {
         this.ui.showComplete(this.moves, this.currentLevel >= levels.length - 1);
         this._updateLevelSelect();
-      }, 400);
+      }, 800);
     }
   }
 
-  // Undo last move
   undo() {
     if (this.busy || this.history.length === 0) return;
     const state = this.history.pop();
@@ -178,7 +184,6 @@ export class Game {
     this._updateBlockStates();
   }
 
-  // Reset current level
   reset() {
     if (this.busy) return;
     this.loadLevel(this.currentLevel);
@@ -195,10 +200,8 @@ export class Game {
   _updateBlockStates() {
     const blockPositions = this.blocks.map(b => ({ x: b.gridX, z: b.gridZ }));
 
-    // Update plate visuals
     this.grid.updatePlates(blockPositions);
 
-    // Update block visuals (on plate or not)
     for (const block of this.blocks) {
       const onPlate = this.levelData.plates.some(
         p => p.x === block.gridX && p.z === block.gridZ
@@ -208,15 +211,22 @@ export class Game {
   }
 
   _checkWin() {
-    // All plates must have a block on them
     return this.levelData.plates.every(plate =>
       this.blocks.some(b => b.gridX === plate.x && b.gridZ === plate.z)
     );
   }
 
-  // Called each frame for animations
   update(time) {
     if (this.player) this.player.update(time);
     for (const block of this.blocks) block.update(time);
+    this.grid.update(time);
+
+    // Update celebration effects
+    for (let i = this.celebrations.length - 1; i >= 0; i--) {
+      this.celebrations[i].update();
+      if (!this.celebrations[i].alive) {
+        this.celebrations.splice(i, 1);
+      }
+    }
   }
 }

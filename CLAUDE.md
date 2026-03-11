@@ -4,7 +4,7 @@
 3D Sokoban-style puzzle game built with Three.js. The player pushes energy cores onto power plates to reactivate ancient chambers. Deployed on GitHub Pages.
 
 ## Tech Stack
-- **Three.js** (v0.183) - 3D rendering
+- **Three.js** (v0.183) - 3D rendering + post-processing
 - **Vite** (v7) - bundler and dev server
 - **Vanilla JS** - ES modules, no framework
 
@@ -21,6 +21,7 @@ src/
   grid.js        - Grid rendering (floors, walls, plates), cell types, coordinate conversion
   player.js      - Player mesh (octahedron), movement animation
   block.js       - Energy core mesh (cube), push animation, on-plate visual state
+  particles.js   - Particle systems (ambient, energy rings, celebration burst)
   levelLoader.js - Parses level data into game state (player, blocks, plates positions)
   camera.js      - Orthographic isometric camera, OrbitControls config
   materials.js   - Shared materials and color palette constants
@@ -47,3 +48,11 @@ Levels are 2D arrays in `src/levels/index.js`. Cell types:
 - Mobile: virtual D-pad + action buttons; camera rotation via single touch drag
 - Level progress saved in localStorage (`vaults_progress`)
 - Smooth movement animations (150ms ease-in-out) with player hop effect
+
+## Visual Pipeline
+- **Post-processing**: EffectComposer with UnrealBloomPass, VignetteShader, OutputPass
+- **Bloom**: strength=0.6, radius=0.3, threshold=0.25 - makes emissive materials glow
+- **Particles**: AmbientParticles (floating dust), EnergyRing (orbiting around blocks/player), CelebrationBurst (win effect)
+- **Tone mapping**: ACESFilmicToneMapping with exposure=1.1
+- **Materials**: High emissiveIntensity values on blocks/plates/player to interact with bloom
+- **Grid**: Ground plane with grid lines extends beyond level; wall accent lines where walls face floors
