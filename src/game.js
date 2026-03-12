@@ -21,6 +21,7 @@ export class Game {
     this.levelData = null;
     this.onLevelLoaded = null;
     this.celebrations = []; // active celebration effects
+    this.lastMoveDir = null; // tracks last movement direction for camera follow
 
     this._loadProgress();
     this._setupUI();
@@ -76,6 +77,7 @@ export class Game {
     this.moves = 0;
     this.history = [];
     this.busy = false;
+    this.lastMoveDir = null;
 
     const level = levels[index];
     this.levelData = parseLevel(level);
@@ -149,6 +151,7 @@ export class Game {
       await this.player.moveTo(newX, newZ, this.grid);
     }
 
+    this.lastMoveDir = { dx, dz };
     this.moves++;
     this.ui.setMoves(this.moves);
     this._updateBlockStates();

@@ -18,11 +18,11 @@ renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
 renderer.shadowMap.enabled = true;
 renderer.shadowMap.type = THREE.PCFSoftShadowMap;
 renderer.toneMapping = THREE.ACESFilmicToneMapping;
-renderer.toneMappingExposure = 1.4;
+renderer.toneMappingExposure = 1.15;
 
 const scene = new THREE.Scene();
 scene.background = new THREE.Color(COLORS.fog);
-scene.fog = new THREE.FogExp2(COLORS.fog, 0.018);
+scene.fog = new THREE.FogExp2(COLORS.fog, 0.006);
 
 // Lighting
 const ambientLight = new THREE.AmbientLight(COLORS.ambient, 2.5);
@@ -63,7 +63,7 @@ composer.addPass(renderPass);
 // Bloom - makes emissive materials glow
 const bloomPass = new UnrealBloomPass(
   new THREE.Vector2(window.innerWidth, window.innerHeight),
-  0.6,   // strength
+  0.4,   // strength
   0.3,   // radius
   0.25   // threshold
 );
@@ -71,8 +71,8 @@ composer.addPass(bloomPass);
 
 // Vignette - subtle dark edges
 const vignettePass = new ShaderPass(VignetteShader);
-vignettePass.uniforms['darkness'].value = 0.6;
-vignettePass.uniforms['offset'].value = 1.2;
+vignettePass.uniforms['darkness'].value = 0.8;
+vignettePass.uniforms['offset'].value = 1.1;
 composer.addPass(vignettePass);
 
 // Output pass for correct color space
@@ -211,6 +211,7 @@ if (isTouchPrimary) {
 
 // Render loop
 const CAMERA_LERP = 0.15;
+const CAMERA_ROTATION_LERP = 0.04;
 const clock = new THREE.Clock();
 function animate() {
   requestAnimationFrame(animate);
@@ -222,6 +223,28 @@ function animate() {
     controls.target.x += (pos.x - controls.target.x) * CAMERA_LERP;
     controls.target.z += (pos.z - controls.target.z) * CAMERA_LERP;
     controls.target.y = 0;
+  }
+
+  // Auto-rotate camera to stay behind player's last movement direction
+  if (game.lastMoveDir) {
+    const { dx, dz } = game.lastMoveDir;
+    const targetAzimuth = Math.atan2(-dx, -dz);
+    const currentAzimuth = controls.getAzimuthalAngle();
+
+    let diff = targetAzimuth - currentAzimuth;
+    while (diff > Math.PI) diff -= 2 * Math.PI;
+    while (diff < -Math.PI) diff += 2 * Math.PI;
+
+    if (Math.abs(diff) > 0.005) {
+      const newAzimuth = currentAzimuth + diff * CAMERA_ROTATION_LERP;
+      const polar = controls.getPolarAngle();
+      const distance = camera.position.distanceTo(controls.target);
+
+      camera.position.x = controls.target.x + distance * Math.sin(polar) * Math.sin(newAzimuth);
+      camera.position.y = controls.target.y + distance * Math.cos(polar);
+      camera.position.z = controls.target.z + distance * Math.sin(polar) * Math.cos(newAzimuth);
+      camera.lookAt(controls.target);
+    }
   }
 
   controls.update();

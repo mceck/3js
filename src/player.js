@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { playerMaterial, playerAuraMaterial, COLORS } from './materials.js';
+import { playerAuraMaterial, COLORS } from './materials.js';
 import { EnergyRing } from './particles.js';
 
 const MOVE_DURATION = 150; // ms
@@ -11,31 +11,103 @@ export class Player {
     this.gridZ = 0;
     this.group = new THREE.Group();
     this.animating = false;
+    this.facingAngle = 0;
+    this.targetFacingAngle = 0;
 
-    // Main body - octahedron
-    const bodyGeo = new THREE.OctahedronGeometry(0.22, 0);
-    this.body = new THREE.Mesh(bodyGeo, playerMaterial);
-    this.body.position.y = 0.35;
+    // Character group (for facing rotation, independent of position/hop)
+    this.character = new THREE.Group();
+
+    // Dark metallic armor material
+    const armorMat = new THREE.MeshStandardMaterial({
+      color: 0x1a2540,
+      roughness: 0.3,
+      metalness: 0.8,
+      emissive: 0x0a1428,
+      emissiveIntensity: 0.3,
+    });
+
+    // Glowing cyan energy material
+    const glowMat = new THREE.MeshStandardMaterial({
+      color: COLORS.player,
+      emissive: COLORS.player,
+      emissiveIntensity: 1.2,
+      roughness: 0.1,
+      metalness: 0.5,
+    });
+
+    // === HEAD - armored helmet ===
+    const headGeo = new THREE.SphereGeometry(0.1, 8, 6);
+    this.head = new THREE.Mesh(headGeo, armorMat.clone());
+    this.head.scale.y = 0.85;
+    this.head.position.y = 0.50;
+    this.head.castShadow = true;
+    this.character.add(this.head);
+
+    // === VISOR - glowing eye slit ===
+    const visorGeo = new THREE.BoxGeometry(0.14, 0.022, 0.035);
+    this.visorMat = glowMat.clone();
+    this.visor = new THREE.Mesh(visorGeo, this.visorMat);
+    this.visor.position.set(0, 0.48, 0.085);
+    this.character.add(this.visor);
+
+    // === BODY - hexagonal armored torso ===
+    const bodyGeo = new THREE.CylinderGeometry(0.1, 0.15, 0.25, 6);
+    this.body = new THREE.Mesh(bodyGeo, armorMat.clone());
+    this.body.position.y = 0.28;
     this.body.castShadow = true;
-    this.group.add(this.body);
+    this.character.add(this.body);
 
-    // Wireframe aura (slightly larger)
-    const auraGeo = new THREE.OctahedronGeometry(0.30, 0);
-    this.aura = new THREE.Mesh(auraGeo, playerAuraMaterial);
-    this.aura.position.y = 0.35;
-    this.group.add(this.aura);
-
-    // Inner crystal glow
-    const innerGeo = new THREE.OctahedronGeometry(0.12, 0);
-    const innerMat = new THREE.MeshBasicMaterial({
+    // === CORE WINDOW - glowing energy center ===
+    const coreGeo = new THREE.SphereGeometry(0.04, 6, 4);
+    this.coreMat = new THREE.MeshBasicMaterial({
       color: COLORS.playerInner,
       transparent: true,
       opacity: 0.6,
       blending: THREE.AdditiveBlending,
     });
-    this.inner = new THREE.Mesh(innerGeo, innerMat);
-    this.inner.position.y = 0.35;
-    this.group.add(this.inner);
+    this.core = new THREE.Mesh(coreGeo, this.coreMat);
+    this.core.position.set(0, 0.32, 0.12);
+    this.character.add(this.core);
+
+    // === ROBE - flowing lower section ===
+    const robeGeo = new THREE.CylinderGeometry(0.15, 0.04, 0.14, 6);
+    const robeMat = new THREE.MeshStandardMaterial({
+      color: 0x151d30,
+      roughness: 0.4,
+      metalness: 0.7,
+      emissive: 0x080e1a,
+      emissiveIntensity: 0.2,
+    });
+    this.robe = new THREE.Mesh(robeGeo, robeMat);
+    this.robe.position.y = 0.09;
+    this.character.add(this.robe);
+
+    // === CROWN CRYSTAL - floating above head ===
+    const crownGeo = new THREE.OctahedronGeometry(0.045, 0);
+    this.crownMat = glowMat.clone();
+    this.crown = new THREE.Mesh(crownGeo, this.crownMat);
+    this.crown.position.y = 0.68;
+    this.character.add(this.crown);
+
+    // === SHOULDER RUNES - orbiting crystal shards ===
+    const runeGeo = new THREE.TetrahedronGeometry(0.03, 0);
+    const runeMat = glowMat.clone();
+    runeMat.emissiveIntensity = 0.8;
+    this.runeLeft = new THREE.Mesh(runeGeo, runeMat);
+    this.runeLeft.position.set(-0.2, 0.4, 0);
+    this.character.add(this.runeLeft);
+
+    this.runeRight = new THREE.Mesh(runeGeo.clone(), runeMat.clone());
+    this.runeRight.position.set(0.2, 0.4, 0);
+    this.character.add(this.runeRight);
+
+    // === WIREFRAME AURA - outer energy field ===
+    const auraGeo = new THREE.DodecahedronGeometry(0.3, 0);
+    this.aura = new THREE.Mesh(auraGeo, playerAuraMaterial);
+    this.aura.position.y = 0.35;
+    this.character.add(this.aura);
+
+    this.group.add(this.character);
 
     // Orbiting particle ring
     this.ring = new EnergyRing(this.group, 16, 0.35, COLORS.player);
@@ -56,6 +128,13 @@ export class Player {
   }
 
   moveTo(gx, gz, grid) {
+    // Compute facing direction before updating grid position
+    const ddx = gx - this.gridX;
+    const ddz = gz - this.gridZ;
+    if (ddx !== 0 || ddz !== 0) {
+      this.targetFacingAngle = Math.atan2(ddx, ddz);
+    }
+
     return new Promise(resolve => {
       this.gridX = gx;
       this.gridZ = gz;
@@ -89,20 +168,48 @@ export class Player {
   }
 
   update(time) {
+    // Idle floating bob
     if (!this.animating) {
-      this.body.position.y = 0.35 + Math.sin(time * 2) * 0.03;
-      this.inner.position.y = this.body.position.y;
-      this.aura.position.y = this.body.position.y;
+      this.character.position.y = Math.sin(time * 2) * 0.03;
+    } else {
+      this.character.position.y = 0;
     }
-    this.body.rotation.y = time * 0.6;
-    this.aura.rotation.y = -time * 0.3;
-    this.inner.rotation.y = time * 1.2;
 
-    // Pulse aura opacity
-    playerAuraMaterial.opacity = 0.1 + Math.sin(time * 3) * 0.06;
+    // Smooth facing rotation toward movement direction
+    let facingDiff = this.targetFacingAngle - this.facingAngle;
+    while (facingDiff > Math.PI) facingDiff -= 2 * Math.PI;
+    while (facingDiff < -Math.PI) facingDiff += 2 * Math.PI;
+    this.facingAngle += facingDiff * 0.15;
+    this.character.rotation.y = this.facingAngle;
+
+    // Crown crystal rotation and hover
+    this.crown.rotation.y = time * 1.5;
+    this.crown.position.y = 0.68 + Math.sin(time * 3) * 0.02;
+
+    // Shoulder runes gentle orbit
+    const runeOrbit = time * 0.8;
+    this.runeLeft.position.x = -0.19 * Math.cos(runeOrbit);
+    this.runeLeft.position.z = -0.19 * Math.sin(runeOrbit);
+    this.runeLeft.rotation.y = time * 2;
+    this.runeLeft.rotation.x = time * 1.5;
+
+    this.runeRight.position.x = 0.19 * Math.cos(runeOrbit + Math.PI);
+    this.runeRight.position.z = 0.19 * Math.sin(runeOrbit + Math.PI);
+    this.runeRight.rotation.y = -time * 2;
+    this.runeRight.rotation.x = -time * 1.5;
+
+    // Visor emissive pulse
+    this.visorMat.emissiveIntensity = 1.0 + Math.sin(time * 4) * 0.3;
+
+    // Core glow pulse
+    this.coreMat.opacity = 0.4 + Math.sin(time * 3) * 0.2;
+
+    // Aura opacity pulse
+    playerAuraMaterial.opacity = 0.08 + Math.sin(time * 3) * 0.04;
 
     // Update particle ring
-    this.ring.update(time, this.body.position.y);
+    const ringY = 0.35 + (this.animating ? 0 : this.character.position.y);
+    this.ring.update(time, ringY);
   }
 
   dispose() {
