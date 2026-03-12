@@ -123,8 +123,7 @@ document.addEventListener('keydown', (e) => {
   if (e.code in keyMap) {
     e.preventDefault();
     const [dx, dz] = keyMap[e.code];
-    const dir = transformDirection(dx, dz, controls);
-    game.handleMove(dir.dx, dir.dz);
+    game.handleMove(dx, dz);
   }
 
   if (e.code === 'KeyZ') {
@@ -148,19 +147,6 @@ document.addEventListener('keydown', (e) => {
   }
 });
 
-// Transform grid movement based on camera rotation
-function transformDirection(dx, dz, controls) {
-  const azimuth = controls.getAzimuthalAngle();
-  const snapped = Math.round(azimuth / (Math.PI / 2)) * (Math.PI / 2);
-  const cos = Math.round(Math.cos(snapped));
-  const sin = Math.round(Math.sin(snapped));
-
-  return {
-    dx: dx * cos + dz * sin,
-    dz: -dx * sin + dz * cos,
-  };
-}
-
 // Handle window resize
 window.addEventListener('resize', () => {
   const w = window.innerWidth;
@@ -181,8 +167,7 @@ dpadButtons.forEach(btn => {
     if (isOverlayActive()) return;
     const dx = parseInt(btn.dataset.dx, 10);
     const dz = parseInt(btn.dataset.dz, 10);
-    const dir = transformDirection(dx, dz, controls);
-    game.handleMove(dir.dx, dir.dz);
+    game.handleMove(dx, dz);
   };
   btn.addEventListener('touchstart', handler, { passive: false });
   btn.addEventListener('mousedown', handler);

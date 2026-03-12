@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { createBlockMaterial, COLORS } from './materials.js';
+import { COLORS } from './materials.js';
 import { EnergyRing } from './particles.js';
 
 const MOVE_DURATION = 150; // ms
@@ -12,39 +12,74 @@ export class Block {
     this.onPlate = false;
     this.group = new THREE.Group();
 
-    // Energy core - main cube
-    const geo = new THREE.BoxGeometry(0.50, 0.50, 0.50);
-    this.material = createBlockMaterial(false);
-    this.mesh = new THREE.Mesh(geo, this.material);
-    this.mesh.position.y = 0.35;
-    this.mesh.castShadow = true;
-    this.group.add(this.mesh);
+    // === OUTER SHELL - icosahedron containment field ===
+    const shellGeo = new THREE.IcosahedronGeometry(0.22, 1);
+    this.shellMat = new THREE.MeshStandardMaterial({
+      color: COLORS.block,
+      emissive: COLORS.block,
+      emissiveIntensity: 0.3,
+      roughness: 0.15,
+      metalness: 0.9,
+      transparent: true,
+      opacity: 0.35,
+    });
+    this.shell = new THREE.Mesh(shellGeo, this.shellMat);
+    this.shell.position.y = 0.35;
+    this.shell.castShadow = true;
+    this.group.add(this.shell);
 
-    // Inner glow cube (smaller, additive)
-    const innerGeo = new THREE.BoxGeometry(0.30, 0.30, 0.30);
-    this.innerMat = new THREE.MeshBasicMaterial({
+    // === SHELL EDGES - wireframe highlight ===
+    const shellEdges = new THREE.EdgesGeometry(shellGeo);
+    this.edgeMat = new THREE.LineBasicMaterial({
       color: COLORS.block,
       transparent: true,
-      opacity: 0.4,
-      blending: THREE.AdditiveBlending,
+      opacity: 0.6,
     });
-    this.innerMesh = new THREE.Mesh(innerGeo, this.innerMat);
-    this.innerMesh.position.y = 0.35;
-    this.group.add(this.innerMesh);
-
-    // Glowing edges
-    const edges = new THREE.EdgesGeometry(geo);
-    this.edgeMaterial = new THREE.LineBasicMaterial({
-      color: COLORS.block,
-      transparent: true,
-      opacity: 0.7,
-    });
-    this.edges = new THREE.LineSegments(edges, this.edgeMaterial);
+    this.edges = new THREE.LineSegments(shellEdges, this.edgeMat);
     this.edges.position.y = 0.35;
     this.group.add(this.edges);
 
+    // === INNER CORE - bright energy sphere ===
+    const coreGeo = new THREE.SphereGeometry(0.1, 12, 8);
+    this.coreMat = new THREE.MeshBasicMaterial({
+      color: COLORS.block,
+      transparent: true,
+      opacity: 0.7,
+      blending: THREE.AdditiveBlending,
+    });
+    this.core = new THREE.Mesh(coreGeo, this.coreMat);
+    this.core.position.y = 0.35;
+    this.group.add(this.core);
+
+    // === ORBITAL RING 1 - horizontal gyroscope ring ===
+    const ringGeo = new THREE.TorusGeometry(0.18, 0.012, 8, 24);
+    this.ringMat1 = new THREE.MeshStandardMaterial({
+      color: COLORS.block,
+      emissive: COLORS.block,
+      emissiveIntensity: 0.8,
+      roughness: 0.1,
+      metalness: 0.8,
+    });
+    this.ring1 = new THREE.Mesh(ringGeo, this.ringMat1);
+    this.ring1.position.y = 0.35;
+    this.group.add(this.ring1);
+
+    // === ORBITAL RING 2 - perpendicular gyroscope ring ===
+    this.ringMat2 = this.ringMat1.clone();
+    this.ring2 = new THREE.Mesh(ringGeo.clone(), this.ringMat2);
+    this.ring2.position.y = 0.35;
+    this.ring2.rotation.x = Math.PI / 2;
+    this.group.add(this.ring2);
+
+    // === ORBITAL RING 3 - diagonal gyroscope ring ===
+    this.ringMat3 = this.ringMat1.clone();
+    this.ring3 = new THREE.Mesh(ringGeo.clone(), this.ringMat3);
+    this.ring3.position.y = 0.35;
+    this.ring3.rotation.z = Math.PI / 2;
+    this.group.add(this.ring3);
+
     // Orbiting energy particles
-    this.ring = new EnergyRing(this.group, 10, 0.38, COLORS.block);
+    this.particleRing = new EnergyRing(this.group, 12, 0.38, COLORS.block);
 
     // Point light
     this.light = new THREE.PointLight(COLORS.block, 0.7, 3);
@@ -85,7 +120,7 @@ export class Block {
         if (t < 1) {
           requestAnimationFrame(animate);
         } else {
-          this.light.intensity = 0.7;
+          this.light.intensity = this.onPlate ? 1.2 : 0.7;
           resolve();
         }
       };
@@ -97,43 +132,86 @@ export class Block {
     if (this.onPlate === onPlate) return;
     this.onPlate = onPlate;
     const color = onPlate ? COLORS.blockOnPlate : COLORS.block;
-    this.material.color.setHex(color);
-    this.material.emissive.setHex(color);
-    this.material.emissiveIntensity = onPlate ? 0.8 : 0.5;
-    this.innerMat.color.setHex(color);
-    this.innerMat.opacity = onPlate ? 0.6 : 0.4;
-    this.edgeMaterial.color.setHex(color);
+
+    // Shell
+    this.shellMat.color.setHex(color);
+    this.shellMat.emissive.setHex(color);
+    this.shellMat.emissiveIntensity = onPlate ? 0.5 : 0.3;
+    this.shellMat.opacity = onPlate ? 0.5 : 0.35;
+
+    // Edges
+    this.edgeMat.color.setHex(color);
+    this.edgeMat.opacity = onPlate ? 0.9 : 0.6;
+
+    // Core
+    this.coreMat.color.setHex(color);
+    this.coreMat.opacity = onPlate ? 0.9 : 0.7;
+
+    // Rings
+    [this.ringMat1, this.ringMat2, this.ringMat3].forEach(mat => {
+      mat.color.setHex(color);
+      mat.emissive.setHex(color);
+      mat.emissiveIntensity = onPlate ? 1.2 : 0.8;
+    });
+
+    // Light
     this.light.color.setHex(color);
     this.light.intensity = onPlate ? 1.2 : 0.7;
-    this.ring.setColor(color);
+
+    // Particles
+    this.particleRing.setColor(color);
   }
 
   update(time) {
     const offset = this.gridX * 0.7 + this.gridZ * 1.1;
-    this.mesh.rotation.y = time * 0.4 + offset;
-    this.mesh.rotation.x = Math.sin(time * 0.8 + offset) * 0.12;
-    this.innerMesh.rotation.y = -time * 0.6 + offset;
-    this.innerMesh.rotation.x = -this.mesh.rotation.x;
-    this.mesh.position.y = 0.35 + Math.sin(time * 1.5 + offset) * 0.025;
-    this.innerMesh.position.y = this.mesh.position.y;
-    this.edges.rotation.copy(this.mesh.rotation);
-    this.edges.position.y = this.mesh.position.y;
+    const speed = this.onPlate ? 1.5 : 1.0;
 
-    // Pulse inner glow
-    this.innerMat.opacity = (this.onPlate ? 0.5 : 0.3) + Math.sin(time * 3 + offset) * 0.1;
+    // Shell gentle tumble
+    this.shell.rotation.y = time * 0.3 * speed + offset;
+    this.shell.rotation.x = Math.sin(time * 0.5 + offset) * 0.15;
+
+    // Edges follow shell
+    this.edges.rotation.copy(this.shell.rotation);
+
+    // Gyroscope rings - each on a different axis at different speeds
+    this.ring1.rotation.z = time * 1.2 * speed + offset;
+    this.ring2.rotation.y = time * 0.9 * speed + offset;
+    this.ring2.rotation.x = Math.PI / 2 + time * 0.3;
+    this.ring3.rotation.x = time * 0.7 * speed + offset;
+    this.ring3.rotation.z = Math.PI / 2 + time * 0.2;
+
+    // Float bob
+    const bobY = 0.35 + Math.sin(time * 1.5 + offset) * 0.025;
+    this.shell.position.y = bobY;
+    this.edges.position.y = bobY;
+    this.core.position.y = bobY;
+    this.ring1.position.y = bobY;
+    this.ring2.position.y = bobY;
+    this.ring3.position.y = bobY;
+
+    // Core pulse
+    const pulse = Math.sin(time * 3 + offset);
+    this.coreMat.opacity = (this.onPlate ? 0.7 : 0.5) + pulse * 0.15;
+    this.core.scale.setScalar(1.0 + pulse * 0.08);
 
     // Update particle ring
-    this.ring.update(time + offset, this.mesh.position.y);
+    this.particleRing.update(time + offset, bobY);
   }
 
   dispose() {
-    this.ring.dispose();
+    this.particleRing.dispose();
     this.scene.remove(this.group);
-    this.mesh.geometry.dispose();
-    this.material.dispose();
-    this.innerMesh.geometry.dispose();
-    this.innerMat.dispose();
-    this.edgeMaterial.dispose();
+    this.shell.geometry.dispose();
+    this.shellMat.dispose();
     this.edges.geometry.dispose();
+    this.edgeMat.dispose();
+    this.core.geometry.dispose();
+    this.coreMat.dispose();
+    this.ring1.geometry.dispose();
+    this.ringMat1.dispose();
+    this.ring2.geometry.dispose();
+    this.ringMat2.dispose();
+    this.ring3.geometry.dispose();
+    this.ringMat3.dispose();
   }
 }
