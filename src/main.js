@@ -123,7 +123,8 @@ document.addEventListener('keydown', (e) => {
   if (e.code in keyMap) {
     e.preventDefault();
     const [dx, dz] = keyMap[e.code];
-    game.handleMove(dx, dz);
+    const dir = transformDirection(dx, dz);
+    game.handleMove(dir.dx, dir.dz);
   }
 
   if (e.code === 'KeyZ') {
@@ -147,6 +148,18 @@ document.addEventListener('keydown', (e) => {
   }
 });
 
+// Transform screen-relative direction to grid direction based on camera angle
+function transformDirection(dx, dz) {
+  const azimuth = controls.getAzimuthalAngle();
+  const snapped = Math.round(azimuth / (Math.PI / 2)) * (Math.PI / 2);
+  const cos = Math.round(Math.cos(snapped));
+  const sin = Math.round(Math.sin(snapped));
+  return {
+    dx: dx * cos + dz * sin,
+    dz: -dx * sin + dz * cos,
+  };
+}
+
 // Handle window resize
 window.addEventListener('resize', () => {
   const w = window.innerWidth;
@@ -167,7 +180,8 @@ dpadButtons.forEach(btn => {
     if (isOverlayActive()) return;
     const dx = parseInt(btn.dataset.dx, 10);
     const dz = parseInt(btn.dataset.dz, 10);
-    game.handleMove(dx, dz);
+    const dir = transformDirection(dx, dz);
+    game.handleMove(dir.dx, dir.dz);
   };
   btn.addEventListener('touchstart', handler, { passive: false });
   btn.addEventListener('mousedown', handler);
@@ -196,7 +210,6 @@ if (isTouchPrimary) {
 
 // Render loop
 const CAMERA_LERP = 0.15;
-const CAMERA_ROTATION_LERP = 0.04;
 const clock = new THREE.Clock();
 function animate() {
   requestAnimationFrame(animate);
@@ -208,28 +221,6 @@ function animate() {
     controls.target.x += (pos.x - controls.target.x) * CAMERA_LERP;
     controls.target.z += (pos.z - controls.target.z) * CAMERA_LERP;
     controls.target.y = 0;
-  }
-
-  // Auto-rotate camera to stay behind player's last movement direction
-  if (game.lastMoveDir) {
-    const { dx, dz } = game.lastMoveDir;
-    const targetAzimuth = Math.atan2(-dx, -dz);
-    const currentAzimuth = controls.getAzimuthalAngle();
-
-    let diff = targetAzimuth - currentAzimuth;
-    while (diff > Math.PI) diff -= 2 * Math.PI;
-    while (diff < -Math.PI) diff += 2 * Math.PI;
-
-    if (Math.abs(diff) > 0.005) {
-      const newAzimuth = currentAzimuth + diff * CAMERA_ROTATION_LERP;
-      const polar = controls.getPolarAngle();
-      const distance = camera.position.distanceTo(controls.target);
-
-      camera.position.x = controls.target.x + distance * Math.sin(polar) * Math.sin(newAzimuth);
-      camera.position.y = controls.target.y + distance * Math.cos(polar);
-      camera.position.z = controls.target.z + distance * Math.sin(polar) * Math.cos(newAzimuth);
-      camera.lookAt(controls.target);
-    }
   }
 
   controls.update();

@@ -15,9 +15,9 @@ export function createCamera(canvas, gridWidth, gridHeight) {
     100
   );
 
-  // Isometric-like angle
+  // Isometric angle — start at azimuth 0 (aligned to snap grid)
   const dist = 15;
-  const angle = Math.PI / 4;
+  const angle = 0;
   const tilt = Math.atan(1 / Math.sqrt(2));
 
   camera.position.set(
