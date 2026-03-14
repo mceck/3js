@@ -17,6 +17,26 @@ export const COLORS = {
   fog: 0x0a0c18,
   groundGrid: 0x141824,
   groundLine: 0x1e2838,
+  // Modifier colors
+  ice: 0x66ddff,
+  teleA: 0xff8833,
+  teleB: 0xdd44ff,
+  fragile: 0xaa7744,
+  fragileCrack: 0x665533,
+  arrow: 0x44ff88,
+};
+
+// Floor modifier types
+export const MODIFIER = {
+  NONE: 0,
+  ICE: 1,
+  TELE_A: 2,
+  TELE_B: 3,
+  FRAGILE: 4,
+  ARROW_UP: 5,
+  ARROW_RIGHT: 6,
+  ARROW_DOWN: 7,
+  ARROW_LEFT: 8,
 };
 
 // Floor tile material - slightly reflective dark
