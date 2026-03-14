@@ -50,18 +50,18 @@ const level3 = {
 
 const level4 = {
   name: "Architect's Workshop",
-  description: 'The Architect\'s own workspace, divided by walls placed with deliberate intention. Three cores must find their homes among partitioned chambers \u2014 a puzzle left as a test for any who would follow.',
+  description: 'The Architect\'s own workspace, divided by pillars placed with deliberate intention. Three cores must weave through the gaps to reach their conduits \u2014 a puzzle left as a test for any who would follow.',
   completionText: 'The workshop awakens. Holographic blueprints flicker into existence along the walls \u2014 designs for chambers that may never be built. Or perhaps they already were, deeper still.',
   grid: [
     [1, 1, 1, 1, 1, 1, 1, 1, 1],
     [1, 2, 2, 2, 1, 2, 2, 2, 1],
-    [1, 2, 5, 2, 1, 2, 3, 2, 1],
+    [1, 2, 5, 2, 2, 2, 3, 2, 1],
+    [1, 2, 2, 2, 1, 2, 2, 2, 1],
     [1, 2, 2, 2, 2, 2, 2, 2, 1],
-    [1, 1, 1, 2, 2, 2, 1, 1, 1],
-    [1, 2, 2, 2, 2, 2, 2, 2, 1],
-    [1, 2, 3, 2, 1, 2, 5, 2, 1],
-    [1, 2, 2, 2, 1, 2, 3, 2, 1],
-    [1, 4, 2, 5, 1, 2, 2, 2, 1],
+    [1, 2, 3, 2, 1, 2, 2, 2, 1],
+    [1, 2, 2, 2, 2, 2, 5, 2, 1],
+    [1, 2, 2, 5, 2, 2, 3, 2, 1],
+    [1, 4, 2, 2, 2, 2, 2, 2, 1],
     [1, 1, 1, 1, 1, 1, 1, 1, 1],
   ],
 };
