@@ -5,6 +5,7 @@ import { parseLevel } from './levelLoader.js';
 import { levels } from './levels/index.js';
 import { UI } from './ui.js';
 import { CelebrationBurst } from './particles.js';
+import { MODIFIER } from './materials.js';
 
 export class Game {
   constructor(scene) {
@@ -22,6 +23,7 @@ export class Game {
     this.onLevelLoaded = null;
     this.celebrations = []; // active celebration effects
     this.lastMoveDir = null; // tracks last movement direction for camera follow
+    this.brokenFragile = new Set(); // tracks broken fragile tiles
 
     this._loadProgress();
     this._setupUI();
@@ -91,9 +93,10 @@ export class Game {
     }
     this.celebrations.forEach(c => { if (c.alive) c.dispose(); });
     this.celebrations = [];
+    this.brokenFragile = new Set();
 
     // Build grid
-    this.grid.build(this.levelData.grid);
+    this.grid.build(this.levelData.grid, this.levelData.modifiers);
 
     // Create player
     this.player = new Player(this.scene);
@@ -121,6 +124,34 @@ export class Game {
     }
   }
 
+  // Check if a one-way arrow allows movement in the given direction
+  _isArrowAllowed(gx, gz, dx, dz) {
+    const mod = this.grid.getModifier(gx, gz);
+    if (mod < MODIFIER.ARROW_UP || mod > MODIFIER.ARROW_LEFT) return true;
+    const allowed = {
+      [MODIFIER.ARROW_UP]: { dx: 0, dz: -1 },
+      [MODIFIER.ARROW_RIGHT]: { dx: 1, dz: 0 },
+      [MODIFIER.ARROW_DOWN]: { dx: 0, dz: 1 },
+      [MODIFIER.ARROW_LEFT]: { dx: -1, dz: 0 },
+    };
+    const a = allowed[mod];
+    return dx === a.dx && dz === a.dz;
+  }
+
+  // Compute where a block slides on ice
+  _iceSlideEnd(startX, startZ, dx, dz) {
+    let x = startX, z = startZ;
+    while (this.grid.getModifier(x, z) === MODIFIER.ICE) {
+      const nx = x + dx, nz = z + dz;
+      if (!this.grid.isWalkable(nx, nz)) break;
+      if (this.blocks.some(b => b.gridX === nx && b.gridZ === nz)) break;
+      if (!this._isArrowAllowed(nx, nz, dx, dz)) break;
+      x = nx;
+      z = nz;
+    }
+    return { x, z };
+  }
+
   async handleMove(dx, dz) {
     if (this.busy || !this.player) return;
 
@@ -129,26 +160,49 @@ export class Game {
 
     if (!this.grid.isWalkable(newX, newZ)) return;
 
+    // Check one-way arrow constraint on target tile
+    if (!this._isArrowAllowed(newX, newZ, dx, dz)) return;
+
+    const prevPlayerX = this.player.gridX;
+    const prevPlayerZ = this.player.gridZ;
+
     const blockAtTarget = this.blocks.find(b => b.gridX === newX && b.gridZ === newZ);
 
     if (blockAtTarget) {
-      const pushX = newX + dx;
-      const pushZ = newZ + dz;
+      let pushX = newX + dx;
+      let pushZ = newZ + dz;
 
       if (!this.grid.isWalkable(pushX, pushZ)) return;
       if (this.blocks.some(b => b.gridX === pushX && b.gridZ === pushZ)) return;
+      // Check one-way arrow on push destination
+      if (!this._isArrowAllowed(pushX, pushZ, dx, dz)) return;
 
       this._saveState();
-
       this.busy = true;
+
+      // Ice sliding for block
+      const ice = this._iceSlideEnd(pushX, pushZ, dx, dz);
+      pushX = ice.x;
+      pushZ = ice.z;
+
       await Promise.all([
         blockAtTarget.moveTo(pushX, pushZ, this.grid),
         this.player.moveTo(newX, newZ, this.grid),
       ]);
+
+      // Teleporter for block
+      await this._handleTeleport(blockAtTarget, pushX, pushZ);
     } else {
       this._saveState();
       this.busy = true;
       await this.player.moveTo(newX, newZ, this.grid);
+    }
+
+    // Break fragile tile the player LEFT
+    const prevMod = this.grid.getModifier(prevPlayerX, prevPlayerZ);
+    if (prevMod === MODIFIER.FRAGILE && !this.brokenFragile.has(`${prevPlayerX},${prevPlayerZ}`)) {
+      this.brokenFragile.add(`${prevPlayerX},${prevPlayerZ}`);
+      this.grid.breakFragile(prevPlayerX, prevPlayerZ);
     }
 
     this.lastMoveDir = { dx, dz };
@@ -185,9 +239,34 @@ export class Game {
     }
   }
 
+  async _handleTeleport(block, bx, bz) {
+    const mod = this.grid.getModifier(bx, bz);
+    if (mod !== MODIFIER.TELE_A && mod !== MODIFIER.TELE_B) return;
+    const targetType = mod === MODIFIER.TELE_A ? MODIFIER.TELE_B : MODIFIER.TELE_A;
+    const paired = this.levelData.teleporters.find(t => t.type === targetType);
+    if (!paired) return;
+    // Don't teleport if paired destination is occupied
+    if (this.blocks.some(b => b.gridX === paired.x && b.gridZ === paired.z)) return;
+    if (this.player.gridX === paired.x && this.player.gridZ === paired.z) return;
+    block.gridX = paired.x;
+    block.gridZ = paired.z;
+    const world = this.grid.gridToWorld(paired.x, paired.z);
+    block.group.position.set(world.x, 0, world.z);
+  }
+
   undo() {
     if (this.busy || this.history.length === 0) return;
     const state = this.history.pop();
+
+    // Restore fragile tiles that were broken after this state was saved
+    const oldBroken = this.brokenFragile;
+    this.brokenFragile = new Set(state.brokenFragile || []);
+    for (const key of oldBroken) {
+      if (!this.brokenFragile.has(key)) {
+        const [gx, gz] = key.split(',').map(Number);
+        this.grid.restoreFragile(gx, gz);
+      }
+    }
 
     this.player.setPosition(state.player.x, state.player.z, this.grid);
     for (let i = 0; i < this.blocks.length; i++) {
@@ -209,6 +288,7 @@ export class Game {
       player: { x: this.player.gridX, z: this.player.gridZ },
       blocks: this.blocks.map(b => ({ x: b.gridX, z: b.gridZ })),
       moves: this.moves,
+      brokenFragile: [...this.brokenFragile],
     });
   }
 

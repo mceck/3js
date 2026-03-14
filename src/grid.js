@@ -269,16 +269,6 @@ export class Grid {
     }
   }
 
-  // Animate plate pulse rings
-  update(time) {
-    for (const plate of this.plates) {
-      const pulse = 0.5 + Math.sin(time * 2) * 0.5;
-      plate.outerRingMat.opacity = 0.08 + pulse * 0.12;
-      const scale = 1.0 + Math.sin(time * 2) * 0.08;
-      plate.outerRing.scale.set(scale, scale, 1);
-    }
-  }
-
   // --- Modifier overlay rendering ---
 
   _createIceOverlay(wx, wz) {

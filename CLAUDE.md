@@ -28,7 +28,7 @@ src/
   ui.js          - DOM UI (level name, move counter, title screen, level complete overlay, level intro overlay)
   style.css      - Dark theme with neon blue/purple palette
   levels/
-    index.js     - 5 levels defined as 2D grid arrays with narrative text
+    index.js     - 20 levels defined as 2D grid arrays with narrative text
 docs/            - Built output served by GitHub Pages (do NOT gitignore)
 ```
 
@@ -39,6 +39,17 @@ Levels are 2D arrays in `src/levels/index.js`. Cell types:
 Each level also has:
 - `description` - lore text shown in intro overlay before playing
 - `completionText` - narrative text shown on level completion
+- `modifiers` (optional) - 2D array same size as grid, floor modifier types
+
+## Floor Modifiers (levels 11-20)
+Levels can have an optional `modifiers` array that adds special tile behaviors:
+- 0=none, 1=ice, 2=teleporter A, 3=teleporter B, 4=fragile, 5-8=one-way arrows (up/right/down/left)
+
+Mechanics:
+- **Ice (1)**: Pushed blocks slide until hitting a wall, block, or non-ice tile
+- **Teleporters (2,3)**: Paired portals — block pushed onto one appears at the other
+- **Fragile (4)**: Floor crumbles to void after the player steps off it
+- **One-Way Arrows (5-8)**: Only allow entry in the arrow's direction (5=up/-z, 6=right/+x, 7=down/+z, 8=left/-x)
 
 ## Deployment
 - Build output goes to `docs/` folder
